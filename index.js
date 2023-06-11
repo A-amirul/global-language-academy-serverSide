@@ -26,9 +26,21 @@ async function run() {
 		// Connect the client to the server	(optional starting in v4.7)
 		await client.connect();
 
+		const userCollection = client.db("languageDb").collection("users");
 		const instructorCollection = client.db("languageDb").collection("instructors");
 		const classesCollection = client.db("languageDb").collection("classes");
 		const myClassCollection = client.db("languageDb").collection("myClass");
+
+		// Users API
+		app.post('/users', async (req, res) => {
+			const user = req.body;
+			const result = await userCollection.insertOne(user);
+			res.send(result);
+
+		})
+
+
+
 
 		// instructor API
 		app.get('/instructors', async (req, res) => {
