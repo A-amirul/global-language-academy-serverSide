@@ -28,6 +28,7 @@ async function run() {
 
 		const instructorCollection = client.db("languageDb").collection("instructors");
 		const classesCollection = client.db("languageDb").collection("classes");
+		const myClassCollection = client.db("languageDb").collection("myClass");
 
 		// instructor API
 		app.get('/instructors', async (req, res) => {
@@ -42,9 +43,13 @@ async function run() {
 			res.send(result);
 		})
 
-
-
-
+		// my Class collection 
+		app.post('/myClass', async (req, res) => {
+			const item = req.body;
+			console.log(item);
+			const result = await myClassCollection.insertOne(item);
+			res.send(result);
+		})
 
 
 
