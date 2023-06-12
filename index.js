@@ -3,6 +3,7 @@ const app = express();
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config()
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -14,7 +15,7 @@ const verifyJWT = (req, res, next) => {
 	if (!authorization) {
 		return res.status(401).send({ error: true, message: 'unauthorized access' });
 	}
-//   bearer token
+	//   bearer token
 	const token = authorization.split(' ')[1];
 
 	jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
@@ -53,7 +54,7 @@ async function run() {
 		app.post('/jwt', (req, res) => {
 			const user = req.body;
 			const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-			res.send({token});
+			res.send({ token });
 		})
 
 		const verifyAdmin = async (req, res, next) => {
@@ -67,7 +68,7 @@ async function run() {
 		}
 
 		// Users API
-		app.get('/users',verifyJWT, verifyAdmin, async (req, res) => {
+		app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
 			const result = await userCollection.find().toArray();
 			res.send(result);
 		})
@@ -148,12 +149,12 @@ async function run() {
 
 		// classes API
 		app.get('/classes', async (req, res) => {
-			const result = await classesCollection.find().toArray();
+			const result = await classesCollection.find({}).sort({ availableSeats: -1 }).toArray();
 			res.send(result);
 		})
 
 		// my Class collection 
-		app.get('/myClass',verifyJWT, async(req,res) => {
+		app.get('/myClass', verifyJWT, async (req, res) => {
 			const email = req.query.email;
 			if (!email) {
 				res.send([]);
@@ -181,6 +182,23 @@ async function run() {
 			const result = await myClassCollection.deleteOne(query);
 			res.send(result);
 		})
+
+
+		// create payment intent
+		app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+			const { price } = req.body;
+			const amount = parseInt(price * 100);
+			const paymentIntent = await stripe.paymentIntents.create({
+				amount: amount,
+				currency: 'usd',
+				payment_method_types: ['card']
+			});
+
+			res.send({clientSecret: paymentIntent.client_secret})
+		})
+
+
+		
 
 
 
