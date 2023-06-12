@@ -56,8 +56,18 @@ async function run() {
 			res.send({token});
 		})
 
+		const verifyAdmin = async (req, res, next) => {
+			const email = req.decoded.email;
+			const query = { email: email }
+			const user = await userCollection.findOne(query);
+			if (user?.role !== 'admin') {
+				return res.status(403).send({ error: true, message: 'forbidden message' });
+			}
+			next();
+		}
+
 		// Users API
-		app.get('/users', async (req, res) => {
+		app.get('/users',verifyJWT, verifyAdmin, async (req, res) => {
 			const result = await userCollection.find().toArray();
 			res.send(result);
 		})
@@ -70,7 +80,7 @@ async function run() {
 			}
 
 			const query = { email: email }
-			const user = await usersCollection.findOne(query);
+			const user = await userCollection.findOne(query);
 			const result = { admin: user?.role === 'admin' }
 			res.send(result);
 		})
@@ -118,6 +128,20 @@ async function run() {
 		// instructor API
 		app.get('/instructors', async (req, res) => {
 			const result = await instructorCollection.find().toArray();
+			res.send(result);
+		})
+
+		// Class added by instructor
+
+		app.post("/classes", async (req, res) => {
+			const body = req.body;
+
+			if (!body) {
+				return res.status(404).send({ message: "body data not found" });
+			}
+
+			const result = await classesCollection.insertOne(body);
+			console.log(result);
 			res.send(result);
 		})
 
