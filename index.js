@@ -49,6 +49,7 @@ async function run() {
 		const instructorCollection = client.db("languageDb").collection("instructors");
 		const classesCollection = client.db("languageDb").collection("classes");
 		const myClassCollection = client.db("languageDb").collection("myClass");
+		const paymentCollection = client.db("languageDb").collection("payments");
 
 		// JWT
 		app.post('/jwt', (req, res) => {
@@ -62,6 +63,15 @@ async function run() {
 			const query = { email: email }
 			const user = await userCollection.findOne(query);
 			if (user?.role !== 'admin') {
+				return res.status(403).send({ error: true, message: 'forbidden message' });
+			}
+			next();
+		}
+		const verifyInstructor = async (req, res, next) => {
+			const email = req.decoded.email;
+			const query = { email: email }
+			const user = await userCollection.findOne(query);
+			if (user?.role !== 'instructor') {
 				return res.status(403).send({ error: true, message: 'forbidden message' });
 			}
 			next();
@@ -83,6 +93,18 @@ async function run() {
 			const query = { email: email }
 			const user = await userCollection.findOne(query);
 			const result = { admin: user?.role === 'admin' }
+			res.send(result);
+		})
+		app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
+			const email = req.params.email;
+
+			if (req.decoded.email !== email) {
+				res.send({ instructor: false })
+			}
+
+			const query = { email: email }
+			const user = await userCollection.findOne(query);
+			const result = { instructor: user?.role === 'instructor' }
 			res.send(result);
 		})
 
@@ -197,8 +219,18 @@ async function run() {
 			res.send({clientSecret: paymentIntent.client_secret})
 		})
 
+		// payment related api
+		app.post('/payments', verifyJWT, async (req, res) => {
+			const payment = req.body;
+			const insertResult = await paymentCollection.insertOne(payment);
 
-		
+			// const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+			// const deleteResult = await cartCollection.deleteMany(query)
+
+			// res.send({ insertResult, deleteResult });
+			res.send(insertResult);
+		})
+
 
 
 
