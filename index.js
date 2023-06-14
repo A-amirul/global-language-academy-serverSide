@@ -1,8 +1,8 @@
+require('dotenv').config()
 const express = require('express');
 const app = express();
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-require('dotenv').config()
 const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 const port = process.env.PORT || 5000;
 
@@ -43,7 +43,7 @@ const client = new MongoClient(uri, {
 async function run() {
 	try {
 		// Connect the client to the server	(optional starting in v4.7)
-		await client.connect();
+		// await client.connect();
 
 		const userCollection = client.db("languageDb").collection("users");
 		const instructorCollection = client.db("languageDb").collection("instructors");
@@ -171,7 +171,7 @@ async function run() {
 
 		// classes API
 		app.get('/classes', async (req, res) => {
-			const result = await classesCollection.find({}).sort({ availableSeats: -1 }).toArray();
+			const result = await classesCollection.find({}).sort({ students: -1 }).toArray();
 			res.send(result);
 		})
 
@@ -216,14 +216,14 @@ async function run() {
 				payment_method_types: ['card']
 			});
 
-			res.send({clientSecret: paymentIntent.client_secret})
+			res.send({ clientSecret: paymentIntent.client_secret })
 		})
 
 		// payment related api
 		app.post('/payments', verifyJWT, async (req, res) => {
 			const payment = req.body;
 			const insertResult = await paymentCollection.insertOne(payment);
-			res.send( insertResult);
+			res.send(insertResult);
 		})
 
 		app.get('/payments', async (req, res) => {
